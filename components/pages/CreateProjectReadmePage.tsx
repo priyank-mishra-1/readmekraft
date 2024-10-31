@@ -6,10 +6,11 @@ import { useToast } from "../ui/use-toast";
 import { projectReadmeFormData } from "@/types";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../ui/select";
 import { Button } from "../ui/button";
-import { Check, CopyIcon } from "lucide-react";
+import { Check, CopyIcon, GripVertical } from "lucide-react";
 import RenderMarkdown from "../RenderMarkdown";
 import CreateProjectReadmeForm from "../CreateProejctReadme";
 import { GenerateContentWithAI } from "@/actions/AIGeneration";
+import {Panel, PanelGroup, PanelResizeHandle } from 'react-resizable-panels';
 
 type Props = {
   themeFiles: string[];
@@ -29,6 +30,7 @@ const CreateProjectReadmePage = ({ themeFiles, markdownPath }: Props) => {
   });
   const [themeContent, setThemeContent] = useState("");
   const [isCopied, setIsCopied] = useState(false);
+  const [isRawMode, setIsRawMode] = useState(false);
   const [generating, setGenerating] = useState(false);
 
   const getThemeData = async () => {
@@ -56,6 +58,10 @@ const CreateProjectReadmePage = ({ themeFiles, markdownPath }: Props) => {
       setIsCopied(false);
     }, 2000)
   }
+  
+  const handleMarkdownChange = (e:React.ChangeEvent<HTMLTextAreaElement>)=>{
+    setThemeContent(e.target.value);
+  }
 
   const getAIText = async () => {
     setGenerating(true);
@@ -68,13 +74,16 @@ const CreateProjectReadmePage = ({ themeFiles, markdownPath }: Props) => {
   return (
     <div className='w-full p-4 min-h-screen h-auto bg-gray-50 dark:bg-gray-900'>
       <CreateProjectReadmeForm formData={formData} setFormData={setFormData} handleButtonClick={handleButtonClick} getAIText={getAIText} isAIGenerating={generating} />
-      <div className="w-full shadow-lg rounded-lg h-full bg-background dark:shadow-gray-600">
+      <div className="w-full pb-2 shadow-lg rounded-lg h-full bg-background dark:shadow-gray-600">
         <div className="flex gap-4 w-full justify-end p-2">
           <Button variant={"outline"} className={`h-[40px] w-[40px] p-0 ${isCopied && "bg-green-300 hover:bg-green-300"}`} onClick={handleContentCopy}>
             {!isCopied ?
               <CopyIcon size={20} />
               : <Check />
             }
+          </Button>
+          <Button variant={'outline'} className={`h-[40px] w-32 p-0`} onClick={()=>setIsRawMode(!isRawMode)}>
+            {isRawMode ? 'Raw + Preview': 'Preview only'}
           </Button>
           <Select onValueChange={(value) => setSelectedTheme(value)}>
             <SelectTrigger className="w-[180px]">
@@ -87,8 +96,32 @@ const CreateProjectReadmePage = ({ themeFiles, markdownPath }: Props) => {
             </SelectContent>
           </Select>
         </div>
-
-        <RenderMarkdown themeContent={themeContent} />
+        <PanelGroup direction="horizontal">
+          <Panel id="preview" order={1} defaultSize={isRawMode ? 49 : 100}>
+            <div>
+            <RenderMarkdown themeContent={themeContent} />
+            </div>
+          </Panel>
+          {isRawMode ? (
+            <>
+              <PanelResizeHandle className="flex justify-center items-center w-px mx-4 bg-slate-600">
+                <div className="z-10 flex h-full w-6 items-center justify-center rounded">
+                  <GripVertical className="bg-white dark:bg-background" />
+                </div>
+              </PanelResizeHandle>
+              <Panel id="raw" order={2} defaultSize={51}>
+                <div className="h-full mr-2">
+                <textarea 
+                  value={themeContent} 
+                  onChange={handleMarkdownChange}
+                  className="w-full h-full p-4 rounded-lg text-gray-600 bg-gray-100 dark:bg-gray-800 dark:text-white"
+                />
+                </div>
+              </Panel>
+            </>
+          ) : (<></>)
+        } 
+        </PanelGroup>
       </div>
     </div>
   )
